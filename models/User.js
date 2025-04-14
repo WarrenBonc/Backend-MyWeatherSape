@@ -1,12 +1,29 @@
 const mongoose = require('mongoose');
 
+
 const userSchema = new mongoose.Schema({
-  email: String,
-  name: String,
-  sensitivity: String,  // ex: "frileux"
+  firstName: String,
+  gender: { type: String, enum: ['M', 'F'] }, //// Seuls les valeurs "M" ou "F" sont valides
+  sensitivity: {
+    type: String,
+    enum: [
+      'frileux',
+      'sensible au froid',
+      'neutre',
+      'le froid ne me dérange pas',
+      "j'ai vite chaud",
+      'résistant au froid'
+    ]
+  },
+  email: { type: String, unique: true },
+  birthdate: Date,
+  password: String,
   style: String,        // ex: "casual"
-  accessories: [String], // ex: ["bonnet", "parapluie"]
-  childClothes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ClothingItem' }],
+  accessories: [{
+    type: String,
+    enum: ['casquette', 'bonnet', 'écharpe', 'gants', 'sac à dos', 'lunettes de soleil'] //Accessoires favoris
+  }],
+  children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Child' }] // Référence aux enfants
 });
 
-module.exports = mongoose.model('Users', userSchema);
+module.exports = mongoose.model('User', userSchema);
