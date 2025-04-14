@@ -1,8 +1,8 @@
 var express = require('express');
 var router = express.Router(); // Création d’un routeur Express
 
-require('../models/connection'); // Connexion à la BDD
-const User = require('../models/users'); // Import du modèle User
+
+const User = require('../models/User'); // Import du modèle User
 const bcrypt = require('bcrypt'); // Pour hasher les mots de passe
 const jwt = require('jsonwebtoken'); // Pour créer les tokens JWT
 
