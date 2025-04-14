@@ -18,6 +18,7 @@ app.use(cors());
 app.use(cookieParser());
 app.use(morgan("dev")); // Pour les logs des requêtes HTTP
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 // Pour analyser le corps des requêtes JSON
 
 mongoose
