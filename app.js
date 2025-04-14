@@ -11,6 +11,7 @@ require("dotenv").config();
 const app = express();
 const dressingRoutes = require("./routes/dressing");
 const iaRequestRoutes = require("./routes/iaRequest");
+const usersRoute = require("./routes/users")
 // const authRoutes = require("./routes/auth");
 
 // Middleware
@@ -30,6 +31,7 @@ mongoose
 
 app.use("/api/dressing", dressingRoutes);
 app.use("/api/ask-ai", iaRequestRoutes);
+app.use("/user", usersRoute);
 // app.use("/api/auth", authRoutes);
 
 module.exports = app;
