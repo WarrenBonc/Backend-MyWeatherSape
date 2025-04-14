@@ -6,7 +6,7 @@ const axios = require("axios");
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
 
 // Route POST pour interroger Hugging Face avec un prompt
-router.post("/ask-ai", async (req, res) => {
+router.post("/request", async (req, res) => {
   const { prompt } = req.body;
 
   // Vérification si le prompt est vide
@@ -17,7 +17,7 @@ router.post("/ask-ai", async (req, res) => {
   try {
     // Requête vers l'API Hugging Face
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3",
+      "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
       { inputs: prompt },
       {
         headers: { Authorization: `Bearer ${HF_API_KEY}` },

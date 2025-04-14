@@ -6,28 +6,29 @@ const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
-require("./models/connection");
 
 // Initialisation de l'application Express
 const app = express();
+const dressingRoutes = require("./routes/dressing");
+const iaRequestRoutes = require("./routes/iaRequest");
+// const authRoutes = require("./routes/auth");
 
 // Middleware
 app.use(cors());
 app.use(cookieParser());
 app.use(morgan("dev")); // Pour les logs des requêtes HTTP
-app.use(express.json()); // Pour analyser le corps des requêtes JSON
+app.use(express.urlencoded({ extended: true }));
+// Pour analyser le corps des requêtes JSON
 
-// Connexion à la base de données MongoDB
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connecté"))
-  .catch(err => console.error("❌ Erreur MongoDB :", err));
+  .catch((err) => console.error("❌ Erreur MongoDB :", err));
 
 // Routes
-const dressingRoutes = require('./routes/dressing');
-app.use('/api/dressing', dressingRoutes);
 
-app.listen(3000, () => {
-  console.log("🚀 Backend lancé sur http://localhost:3000");
-}); 
+app.use("/api/dressing", dressingRoutes);
+app.use("/api/ask-ai", iaRequestRoutes);
+// app.use("/api/auth", authRoutes);
 
 module.exports = app;
