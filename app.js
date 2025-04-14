@@ -18,5 +18,16 @@ app.use(morgan("dev")); // Pour les logs des requêtes HTTP
 app.use(express.json()); // Pour analyser le corps des requêtes JSON
 
 // Connexion à la base de données MongoDB
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connecté"))
+  .catch(err => console.error("❌ Erreur MongoDB :", err));
+
+// Routes
+const dressingRoutes = require('./routes/dressing');
+app.use('/api/dressing', dressingRoutes);
+
+app.listen(3000, () => {
+  console.log("🚀 Backend lancé sur http://localhost:3000");
+}); 
 
 module.exports = app;
