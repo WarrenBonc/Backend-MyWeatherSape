@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+require("dotenv").config();
 require("./models/connection");
 
 // Initialisation de l'application Express
