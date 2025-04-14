@@ -24,10 +24,10 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Routes
 const dressingRoutes = require('./routes/dressing');
+
 app.use('/api/dressing', dressingRoutes);
 
-app.listen(3000, () => {
-  console.log("🚀 Backend lancé sur http://localhost:3000");
-}); 
+
+
 
 module.exports = app;
