@@ -9,4 +9,4 @@ const userSchema = new mongoose.Schema({
   childClothes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ClothingItem' }],
 });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('Users', userSchema);
