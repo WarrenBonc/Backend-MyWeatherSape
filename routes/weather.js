@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { getWeatherByCity } = require('../services/weatherAPI');
 const User = require('../models/User');
+const { getWeatherByCity, getForecastByCity } = require('../services/weatherAPI');
 
 // Route 1 : GET /api/weather?city=Paris
 router.get('/', async (req, res) => {
@@ -72,6 +72,25 @@ Quels vêtements et accessoires devrais-tu lui recommander aujourd’hui ? Sois 
   } catch (error) {
     console.error("Erreur dans /recommendation:", error);
     res.status(500).json({ message: 'Erreur interne serveur', error: error.message });
+  }
+});
+
+// Route 3 : GET /api/weather/forecast?city=Paris&days=7
+router.get('/forecast', async (req, res) => {
+  const { city, days } = req.query;
+
+  if (!city) {
+    return res.status(400).json({ message: 'Ville manquante' });
+  }
+
+  const dayCount = days ? parseInt(days, 5) : 5;
+
+  try {
+    const forecast = await getForecastByCity(city, dayCount);
+    res.json(forecast);
+  } catch (error) {
+    console.error('Erreur dans /forecast:', error.message);
+    res.status(500).json({ message: 'Erreur récupération des prévisions météo', error: error.message });
   }
 });
 
