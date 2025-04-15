@@ -22,9 +22,9 @@ async function getWeatherByCity(city) {
   }
 }
 
-async function getForecastByCity(city, days = 5) {
+async function getForecastByCity(city, days = 3) {
   const apiKey = process.env.OPENWEATHER_API_KEY;
-  const url = `https://api.openweathermap.org/data/2.5/forecast/daily?q=${encodeURIComponent(city)}&cnt=${days}&units=metric&lang=fr&appid=${apiKey}`;
+  const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&cnt=${days}&units=metric&lang=fr&appid=${apiKey}`;
 
   try {
     const response = await axios.get(url);

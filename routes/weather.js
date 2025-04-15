@@ -77,17 +77,44 @@ Quels vêtements et accessoires devrais-tu lui recommander aujourd’hui ? Sois 
 
 // Route 3 : GET /api/weather/forecast?city=Paris&days=7
 router.get('/forecast', async (req, res) => {
-  const { city, days } = req.query;
+  const { city } = req.query;
 
   if (!city) {
     return res.status(400).json({ message: 'Ville manquante' });
   }
 
-  const dayCount = days ? parseInt(days, 5) : 5;
-
   try {
-    const forecast = await getForecastByCity(city, dayCount);
-    res.json(forecast);
+    const rawData = await getForecastByCity(city);
+    const dailyData = {};
+
+    rawData.list.forEach(item => {
+      const date = item.dt_txt.split(' ')[0]; // ex: "2025-04-15"
+      const tempMin = item.main.temp_min;
+      const tempMax = item.main.temp_max;
+      const description = item.weather[0].description;
+
+      if (!dailyData[date]) {
+        dailyData[date] = {
+          date,
+          temp_min: tempMin,
+          temp_max: tempMax,
+          descriptions: [description]
+        };
+      } else {
+        dailyData[date].temp_min = Math.min(dailyData[date].temp_min, tempMin);
+        dailyData[date].temp_max = Math.max(dailyData[date].temp_max, tempMax);
+        dailyData[date].descriptions.push(description);
+      }
+    });
+
+    const result = Object.values(dailyData).map(d => ({
+      date: d.date,
+      temp_min: Math.round(d.temp_min - 273.15), // Kelvin -> Celsius
+      temp_max: Math.round(d.temp_max - 273.15),
+      condition: [...new Set(d.descriptions)].join(', ')
+    }));
+
+    res.json(result);
   } catch (error) {
     console.error('Erreur dans /forecast:', error.message);
     res.status(500).json({ message: 'Erreur récupération des prévisions météo', error: error.message });
