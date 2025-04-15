@@ -4,7 +4,7 @@ const axios = require('axios');
 const User = require('../models/User');
 const { getWeatherByCity, getForecastByCity } = require('../services/weatherAPI');
 
-// Route 1 : GET /api/weather?city=Paris
+// Route 1 : GET /api/
 router.get('/', async (req, res) => {
   const city = req.query.city;
 
@@ -75,20 +75,22 @@ Quels vêtements et accessoires devrais-tu lui recommander aujourd’hui ? Sois 
   }
 });
 
-// Route 3 : GET /api/weather/forecast?city=Paris&days=7
+// Route 3 : GET /api/weather/forecast
 router.get('/forecast', async (req, res) => {
-  const { city } = req.query;
+  const { city, days } = req.query;
 
   if (!city) {
     return res.status(400).json({ message: 'Ville manquante' });
   }
 
+  const nbDays = parseInt(days) || 5;
+
   try {
-    const rawData = await getForecastByCity(city);
+    const rawData = await getForecastByCity(city, nbDays);
     const dailyData = {};
 
     rawData.list.forEach(item => {
-      const date = item.dt_txt.split(' ')[0]; // ex: "2025-04-15"
+      const date = item.dt_txt.split(' ')[0];
       const tempMin = item.main.temp_min;
       const tempMax = item.main.temp_max;
       const description = item.weather[0].description;
@@ -109,15 +111,51 @@ router.get('/forecast', async (req, res) => {
 
     const result = Object.values(dailyData).map(d => ({
       date: d.date,
-      temp_min: Math.round(d.temp_min - 273.15), // Kelvin -> Celsius
-      temp_max: Math.round(d.temp_max - 273.15),
+      temp_min: Math.round(d.temp_min),
+      temp_max: Math.round(d.temp_max),
       condition: [...new Set(d.descriptions)].join(', ')
     }));
 
-    res.json(result);
+    res.json({ forecast: result });
   } catch (error) {
     console.error('Erreur dans /forecast:', error.message);
     res.status(500).json({ message: 'Erreur récupération des prévisions météo', error: error.message });
+  }
+});
+
+// Route 4 : GET /api/weather/day
+router.get('/day', async (req, res) => {
+  const { city, day } = req.query;
+
+  if (!city) return res.status(400).json({ message: 'Ville manquante' });
+
+  const targetDay = parseInt(day) || 0;
+
+  try {
+    const apiKey = process.env.OPENWEATHER_API_KEY;
+    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&units=metric&lang=fr&appid=${apiKey}`;
+    const response = await axios.get(url);
+
+    const list = response.data.list;
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + targetDay);
+    const targetDateStr = targetDate.toISOString().split('T')[0];
+
+    const result = list
+      .filter(item => item.dt_txt.startsWith(targetDateStr))
+      .map(item => {
+        return {
+          hour: item.dt_txt.split(' ')[1].slice(0, 5), // HH:MM
+          temp: Math.round(item.main.temp),
+          icon: item.weather[0].icon,
+          condition: item.weather[0].description,
+        };
+      });
+
+    res.json({ date: targetDateStr, forecast: result });
+  } catch (error) {
+    console.error('Erreur dans /day:', error.message);
+    res.status(500).json({ message: 'Erreur récupération des prévisions par jour', error: error.message });
   }
 });
 
