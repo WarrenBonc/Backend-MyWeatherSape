@@ -291,4 +291,16 @@ router.post("/complete-preferences", authenticateToken, async (req, res) => {
   }
 });
 
+router.get("/verify-token", authenticateToken, (req, res) => {
+  try {
+    // Si le middleware `authenticateToken` passe, le token est valide
+    res.json({ valid: true, user: req.user });
+  } catch (error) {
+    console.error("Erreur lors de la vérification du token :", error);
+    res
+      .status(401)
+      .json({ valid: false, message: "Token invalide ou expiré." });
+  }
+});
+
 module.exports = router;
