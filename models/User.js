@@ -23,7 +23,19 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['casquette', 'bonnet', 'écharpe', 'gants', 'sac à dos', 'lunettes de soleil'] //Accessoires favoris
   }],
-  children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Child' }] // Référence aux enfants
+  children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Child' }], // Référence aux enfants
+
+  //champ pour la reinitialisation du mot de passe
+
+  resetToken: {
+    type: String,
+    default: null
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: null
+  }
+
 });
 
 module.exports = mongoose.model('User', userSchema);

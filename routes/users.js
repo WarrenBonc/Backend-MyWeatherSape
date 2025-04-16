@@ -1,7 +1,8 @@
 var express = require('express');
 var router = express.Router(); // Création d’un routeur Express
 
-
+const crypto = require('crypto'); //pour générer un token sécurisé lors de la reinitialisation du mdp
+const nodemailer = require('nodemailer'); //Import de la bibliotheque nodemailer pour l envoie des mails
 const User = require('../models/User'); // Import du modèle User
 const bcrypt = require('bcrypt'); // Pour hasher les mots de passe
 const jwt = require('jsonwebtoken'); // Pour créer les tokens JWT
@@ -88,6 +89,131 @@ router.post('/signin', (req, res) => {
       // Si mauvais mot de passe ou utilisateur introuvable
     }
   });
+});
+
+//route pour la réinitialisation du mot de passe
+
+router.post('/forgot-password', async (req, res) => {
+
+const { email } = req.body;
+
+// Validation de l'email
+const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+if (!email || !emailRegex.test(email.trim())) {
+  return res.json({ success: false, message: 'Email invalide' });
+}
+
+// Vérification si l'email est renseigné
+
+  if (!email || email.trim() === '') {
+    return res.json({ success: false, message: 'Email requis' });
+  }
+
+  // Recherche de l'utilisateur dans la base de données
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.json({ success: false, message: 'Utilisateur non trouvé' });
+  }
+
+  // Générer un token temporaire unique
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetTokenExpiry = Date.now() + 1000 * 60 * 60; // 1 heure
+
+  // Enregistrer le token dans le user
+  user.resetToken = resetToken;
+  user.resetTokenExpiry = resetTokenExpiry;
+  await user.save();
+
+  // Créer un transporteur pour envoyer l'email
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    secure:true,
+    auth: {
+      user: process.env.MAIL_USER,       // à définir dans ton .env
+      pass: process.env.MAIL_PASSWORD,   // idem
+    },
+  });
+
+  const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+
+  const mailOptions = {
+    from: process.env.MAIL_USER,
+    to: user.email,
+    subject: 'Réinitialisation de mot de passe',
+    html: `<p>Bonjour ${user.firstName},</p>
+           <p>Cliquez sur le lien suivant pour réinitialiser votre mot de passe :</p>
+           <a href="${resetLink}">${resetLink}</a>
+           <p>Ce lien expirera dans 1 heure.</p>`,
+  };
+
+  console.log("=== Envoi email ===");
+console.log("À :", user.email);
+console.log("MAIL_USER:", process.env.MAIL_USER);
+console.log("MAIL_PASSWORD:", process.env.MAIL_PASSWORD ? 'OK' : 'MANQUANT');
+
+// Tentative d'envoi de l'email
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true, message: 'Email envoyé avec succès' });
+  } catch (error) {
+    console.error("Erreur d'envoi de mail:", error);
+    if (error.response) {
+      console.error("Réponse SMTP:", error.response);
+    }
+    res.status(500).json({ success: false, message: 'Erreur lors de l’envoi de l’email' });
+  }
+});
+
+// Route pour valider le token et permettre la réinitialisation du mot de passe
+router.get('/reset-password/:token', async (req, res) => {
+  const { token } = req.params;
+  const user = await User.findOne({ resetToken: token, resetTokenExpiry: { $gt: Date.now() } });
+
+  if (!user) {
+    return res.json({ success: false, message: 'Token invalide ou expiré' });
+  }
+
+  res.json({ success: true, message: 'Token valide, vous pouvez réinitialiser votre mot de passe' });
+});
+
+
+
+//Route POST pour finaliser la réinitialisation du mot de passe avec un token
+
+router.post('/reset-password/:token', async (req, res) => {
+
+  const { token } = req.params;         // Récupère le token dans l'URL
+  const { newPassword } = req.body;     // Récupère le nouveau mot de passe depuis le corps de la requête
+
+
+// Vérifie que le nouveau mot de passe est présent et non vide
+  if (!newPassword || newPassword.trim() === '') {
+    return res.json({ success: false, message: 'Nouveau mot de passe requis' });
+  }
+
+  // Recherche un utilisateur avec le token correspondant et non expiré
+  const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() } }); // Vérifie que le token n'est pas expiré
+
+
+// Si aucun utilisateur n'est trouvé ou que le token est expiré
+  if (!user) {
+    return res.json({ success: false, message: 'Token invalide ou expiré' });  
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);  // Hashage du nouveau mot de passe avec bcrypt (niveau de sécurité : 10)
+
+  user.password = hashedPassword;  // Met à jour le mot de passe de l'utilisateur
+
+// Supprime le token et sa date d’expiration (plus nécessaires après réinitialisation)
+  user.resetToken = undefined;
+  user.resetTokenExpiry = undefined;
+
+  await user.save(); // Enregistre les changements dans la base de données
+
+  res.json({ success: true, message: 'Mot de passe réinitialisé avec succès' });  // Réponse envoyée au client : succès
 });
 
 // Logout route
