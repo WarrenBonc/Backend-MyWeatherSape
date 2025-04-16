@@ -7,7 +7,7 @@ const {
   getForecastByCity,
 } = require("../services/weatherAPI");
 
-// Route 1 : GET /api/
+// Route 1 : GET /api/weather
 router.get("/", async (req, res) => {
   const city = req.query.city;
 
@@ -27,7 +27,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-//xs
+// Route 2 : GET /api/weather/7days-hourly/:city
 router.get("/7days-hourly/:city", async (req, res) => {
   try {
     const city = req.params.city;
@@ -43,7 +43,7 @@ router.get("/7days-hourly/:city", async (req, res) => {
     const lat = geoData[0].lat;
     const lon = geoData[0].lon;
 
-    // 2. Récupérer les données météo Open-Meteo pour 7 jours
+    // 2. Récupérer les données météo Open-Meteo pour 7 jourss
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,apparent_temperature,weathercode&daily=weathercode&timezone=auto`;
     const weatherRes = await fetch(weatherUrl);
     const data = await weatherRes.json();
@@ -57,17 +57,20 @@ router.get("/7days-hourly/:city", async (req, res) => {
 
       if (!forecastByDay[date]) {
         forecastByDay[date] = {
-          condition: getWeatherCondition(dailyConditions.shift()),
-          hours: {},
+          condition: getWeatherCondition(dailyConditions.shift()), // Condition globale pour le jour
+          hours: [],
         };
       }
 
-      forecastByDay[date].hours[hour] = {
-        temperature: data.hourly.temperature_2m[index],
-        feels_like: data.hourly.apparent_temperature[index],
-      };
+      // Assure-toi que chaque hour est correctement formaté avec ses données
+      forecastByDay[date].hours.push({
+        hour,
+        temperature: data.hourly.temperature_2m[index], // Température en °C
+        feels_like: data.hourly.apparent_temperature[index], // Température ressentie en °C
+      });
     });
 
+    // 4. Répondre avec les données structurées
     res.json({
       city,
       forecast: forecastByDay,
@@ -104,30 +107,7 @@ function getWeatherCondition(code) {
   }
 }
 
-// Fonction pour transformer le code météo en texte lisible
-function getWeatherCondition(code) {
-  switch (code) {
-    case 0:
-      return "Ensoleillé";
-    case 1:
-    case 2:
-    case 3:
-      return "Partiellement nuageux";
-    case 4:
-      return "Nuageux";
-    case 5:
-    case 6:
-    case 7:
-      return "Pluie légère";
-    case 8:
-    case 9:
-      return "Pluie forte";
-    default:
-      return "Inconnu";
-  }
-}
-
-// Route 2 : POST /api/weather/recommendation
+// Route 3 : POST /api/weather/recommendation
 router.post("/recommendation", async (req, res) => {
   const { userToken, city } = req.body;
 
@@ -183,7 +163,7 @@ Quels vêtements et accessoires devrais-tu lui recommander aujourd’hui ? Sois 
   }
 });
 
-// Route 3 : GET /api/weather/forecast
+// Route 4 : GET /api/weather/forecast
 router.get("/forecast", async (req, res) => {
   const { city, days } = req.query;
 
@@ -234,7 +214,7 @@ router.get("/forecast", async (req, res) => {
   }
 });
 
-// Route 4 : GET /api/weather/day
+// Route 5 : GET /api/weather/day
 router.get("/day", async (req, res) => {
   const { city, day } = req.query;
 
