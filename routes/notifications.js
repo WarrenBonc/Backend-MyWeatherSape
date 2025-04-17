@@ -3,14 +3,12 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const auth = require('../middlewares/auth');
 
 // Route pour sauvegarder les préférences de notifications
-router.post('/save-preferences', async (req, res) => {
-  const { userId, preferences, notificationsEnabled } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({ error: 'userId manquant' });
-  }
+router.post('/save-preferences', auth, async (req, res) => {
+  const { preferences, notificationsEnabled } = req.body;
+  const userId = req.user._id;
 
   try {
     const updatedUser = await User.findByIdAndUpdate(
@@ -36,8 +34,8 @@ router.post('/save-preferences', async (req, res) => {
 });
 
 // Route pour récupérer les préférences de notifications d'un utilisateur
-router.get('/preferences/:userId', async (req, res) => {
-    const { userId } = req.params;
+router.get('/preferences', auth, async (req, res) => {
+    const userId = req.user._id;
   
     try {
       const user = await User.findById(userId);
