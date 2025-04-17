@@ -85,7 +85,7 @@ router.post("/signin", (req, res) => {
   User.findOne({ email }).then((data) => {
     if (data && bcrypt.compareSync(password, data.password)) {
       const token = jwt.sign(
-        { id: savedUser._id, email: savedUser.email }, // Inclure l'ID et l'email
+        { id: data._id, email: data.email }, // Utiliser `data` au lieu de `savedUser`
         process.env.JWT_SECRET, // Clé secrète pour signer le token
         { expiresIn: "7d" } // Le token expire dans 7 jours
       );
@@ -239,9 +239,16 @@ router.post("/reset-password/:token", async (req, res) => {
 
 // Logout route
 router.get("/logout", (req, res) => {
+  // Supprimer le cookie contenant le token
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
   res.json({
     result: true,
-    message: "Logout successful (please remove token from client storage)",
+    message: "Déconnexion réussie. Le cookie a été supprimé.",
   });
 });
 
