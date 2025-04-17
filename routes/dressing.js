@@ -19,7 +19,17 @@ router.post('/add', authenticateToken, async (req, res) => {
 
 // DELETE /api/dressing/delete/:id
 router.delete('/delete/:id', authenticateToken, async (req, res) => {
-  await ClothingItem.findByIdAndDelete(req.params.id);
+  const item = await ClothingItem.findById(req.params.id);
+  
+  if (!item) {
+    return res.status(404).json({ message: 'Vêtement introuvable' });
+  }
+  
+  if (item.userId.toString() !== req.user.id) {
+    return res.status(403).json({ message: 'Non autorisé à supprimer ce vêtement' });
+  }
+  
+  await item.deleteOne();
   res.json({ message: 'Vêtement supprimé' });
 });
 

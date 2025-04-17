@@ -3,7 +3,7 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 
 async function sendWeatherNotification(user) {
   try {
-    const res = await axios.post('http://localhost:3000/api/weather/recommendation', {
+    const res = await axios.post('http://192.168.1.45:3000/api/weather/recommendation', {
       userId: user._id,
       city: user.city, // ou autre champ pertinent
     });
