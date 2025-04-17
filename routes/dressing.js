@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const ClothingItem = require('../models/ClothingItem');
 
-// GET /api/dressing/:userId
-router.get('/:userId', async (req, res) => {
+// GET /api/dressing/adult/:userId
+router.get('/adult/:userId', async (req, res) => {
   const items = await ClothingItem.find({ userId: req.params.userId, forChild: false });
   res.json(items);
 });
@@ -28,8 +28,8 @@ router.get('/child/:userId', async (req, res) => {
   res.json(items);
 });
 
-// PATCH /api/dressing/edit/:id
-router.patch('/edit/:id', async (req, res) => {
+// PUT /api/dressing/edit/:id
+router.put('/edit/:id', async (req, res) => {
     const { label, category, season, forChild } = req.body;
     try {
       const updatedItem = await ClothingItem.findByIdAndUpdate(

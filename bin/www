@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('backend-myweathersape:server');
 var http = require('http');
+require('../services/cron');
 
 /**
  * Get port from environment and store in Express.
