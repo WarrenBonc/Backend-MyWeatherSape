@@ -10,12 +10,12 @@ const userSchema = new mongoose.Schema({
   sensitivity: {
     type: String,
     enum: [
-      "frileux",
-      "sensible au froid",
-      "neutre",
-      "le froid ne me dérange pas",
-      "j'ai vite chaud",
-      "résistant au froid",
+      "Frileux",
+      "Sensible au froid",
+      "Neutre",
+      "Le froid ne me dérange pas",
+      "J'ai vite chaud",
+      "Résistant au froid",
     ],
   },
 
