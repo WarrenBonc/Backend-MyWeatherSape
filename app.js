@@ -12,8 +12,9 @@ dotenv.config();
 const app = express();
 const dressingRoutes = require("./routes/dressing");
 const iaRequestRoutes = require("./routes/iaRequest");
-const usersRoute = require("./routes/users");
-const weatherRoutes = require("./routes/weather");
+const usersRoute = require("./routes/users")
+const weatherRoutes = require('./routes/weather');
+const notificationsRouter = require('./routes/notifications');
 // const authRoutes = require("./routes/auth");
 
 // Middleware
@@ -35,7 +36,7 @@ mongoose
 app.use("/api/dressing", dressingRoutes);
 app.use("/api/ask-ai", iaRequestRoutes);
 app.use("/api/users", usersRoute);
-app.use("/api/weather", weatherRoutes);
+app.use('/api/weather', weatherRoutes);
 // app.use("/api/auth", authRoutes);
 
 module.exports = app;

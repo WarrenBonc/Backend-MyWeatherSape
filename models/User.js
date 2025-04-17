@@ -54,6 +54,25 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  expoPushToken: {
+    type: String,
+    default: null,
+  },
+  notificationTimes: [
+    {
+      type: String,
+      enum: ["morning", "noon", "evening"],
+    },
+  ],
+  notificationsEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  notificationPreferences: {
+    morning: { type: Boolean, default: false },
+    noon: { type: Boolean, default: false },
+    evening: { type: Boolean, default: false },
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);

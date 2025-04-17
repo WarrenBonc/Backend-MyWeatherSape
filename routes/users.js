@@ -111,6 +111,84 @@ router.post("/signin", (req, res) => {
   });
 });
 
+//route pour la réinitialisation du mot de passe
+
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  // Validation de l'email
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+  if (!email || !emailRegex.test(email.trim())) {
+    return res.json({ success: false, message: "Email invalide" });
+  }
+
+  // Vérification si l'email est renseigné
+
+  if (!email || email.trim() === "") {
+    return res.json({ success: false, message: "Email requis" });
+  }
+
+  // Recherche de l'utilisateur dans la base de données
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.json({ success: false, message: "Utilisateur non trouvé" });
+  }
+
+  // Générer un token temporaire unique
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const resetTokenExpiry = Date.now() + 1000 * 60 * 60; // 1 heure
+
+  // Enregistrer le token dans le user
+  user.resetToken = resetToken;
+  user.resetTokenExpiry = resetTokenExpiry;
+  await user.save();
+
+  // Créer un transporteur pour envoyer l'email
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    secure: false,
+    auth: {
+      user: process.env.MAIL_USER, // à définir dans ton .env
+      pass: process.env.MAIL_PASSWORD, // idem
+    },
+    tls: {
+      rejectUnauthorized: false, // Utiliser TLS pour sécuriser la connexion
+    },
+  });
+
+  const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+
+  const mailOptions = {
+    from: process.env.MAIL_USER,
+    to: user.email,
+    subject: "Réinitialisation de mot de passe",
+    html: `<p>Bonjour ${user.firstName},</p>
+           <p>Cliquez sur le lien suivant pour réinitialiser votre mot de passe :</p>
+           <a href="${resetLink}">${resetLink}</a>
+           <p>Ce lien expirera dans 1 heure.</p>`,
+  };
+
+  console.log("=== Envoi email ===");
+  console.log("À :", user.email);
+  console.log("MAIL_USER:", process.env.MAIL_USER);
+  console.log("MAIL_PASSWORD:", process.env.MAIL_PASSWORD ? "OK" : "MANQUANT");
+
+  // Tentative d'envoi de l'email
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true, message: "Email envoyé avec succès" });
+  } catch (error) {
+    console.error("Erreur d'envoi de mail:", error);
+    if (error.response) {
+      console.error("Réponse SMTP:", error.response);
+    }
+    res
+      .status(500)
+      .json({ success: false, message: "Erreur lors de l’envoi de l’email" });
+  }
+});
+
 // Route pour valider le token et permettre la réinitialisation du mot de passe
 router.post("/reset-password", authenticateToken, async (req, res) => {
   const { newPassword } = req.body; // Récupère le nouveau mot de passe depuis le corps de la requête
