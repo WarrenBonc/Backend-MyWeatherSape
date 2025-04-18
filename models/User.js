@@ -1,5 +1,25 @@
 const mongoose = require("mongoose");
 
+// Sous-schema pour un vêtement
+const clothingItemSchema = new mongoose.Schema({
+  label: String, // ex: "T-shirt noir"
+  category: {
+    haut: String,
+    bas: String,
+    accessories: String,
+  },
+  forChild: { type: Boolean, default: false }
+});
+
+// Sous-schema pour un enfant
+const childSchema = new mongoose.Schema({
+  name: String,
+  gender: String,
+  ageGroup: String,
+  dressing: [clothingItemSchema], // Sous-documents vêtements
+});
+
+
 const userSchema = new mongoose.Schema({
   //essentiels
   lastName: String,
@@ -12,9 +32,27 @@ const userSchema = new mongoose.Schema({
   accessories: [String], // Suppression de l'enum pour les accessoires
   recommendationFrequency: String,
   preferencesCompleted: { type: Boolean, default: false },
-  // non essentiels enfants, garderobe, notifications
+  children: [childSchema], // Référence aux enfants
 
-  notificationTimes: [String], // Suppression de l'enum pour les heures de notification
+  // Champs pour la réinitialisation du mot de passe
+  resetToken: {
+    type: String,
+    default: null,
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: null,
+  },
+  expoPushToken: {
+    type: String,
+    default: null,
+  },
+  notificationTimes: [
+    {
+      type: String,
+      enum: ["morning", "noon", "evening"],
+    },
+  ],
   notificationsEnabled: {
     type: Boolean,
     default: false,
