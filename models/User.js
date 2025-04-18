@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   gender: String, // Suppression de l'enum pour le genre
   sensitivity: String, // Suppression de l'enum pour la sensibilité
   accessories: [String], // Suppression de l'enum pour les accessoires
+  recommendationFrequency: String,
   preferencesCompleted: { type: Boolean, default: false },
   // non essentiels enfants, garderobe, notifications
 
@@ -18,10 +19,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  notificationPreferences: {
-    type: Boolean,
-    default: false,
-  },
+  notificationPreferences: [String],
 });
 
 module.exports = mongoose.model("User", userSchema);
