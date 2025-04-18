@@ -49,7 +49,7 @@ router.post("/signup", (req, res) => {
 
       newUser.save().then((savedUser) => {
         const token = jwt.sign(
-          { id: savedUser._id, firstName: savedUser.firstName },
+          { id: savedUser._id, email: savedUser.email }, // Utiliser `savedUser` au lieu de `data`
           process.env.JWT_SECRET,
           { expiresIn: "7d" }
         );
