@@ -6,6 +6,7 @@ const authenticateToken = require('../middlewares/auth');
 // GET /api/dressing/adult
 router.get('/adult', authenticateToken, async (req, res) => {
   const items = await ClothingItem.find({ userId: req.user.id, forChild: false });
+  console.log("Réponse adultes:", items);
   res.json(items);
 });
 
@@ -19,7 +20,7 @@ router.post('/add', authenticateToken, async (req, res) => {
 
 // DELETE /api/dressing/delete/:id
 router.delete('/delete/:id', authenticateToken, async (req, res) => {
-  const item = await ClothingItem.findById(req.params.id);
+  const item = await ClothingItem.findById(req.user.id);
   
   if (!item) {
     return res.status(404).json({ message: 'Vêtement introuvable' });
@@ -36,6 +37,7 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
 // GET /api/dressing/child
 router.get('/child', authenticateToken, async (req, res) => {
   const items = await ClothingItem.find({ userId: req.user.id, forChild: true });
+  console.log("Réponse adultes:", items);
   res.json(items);
 });
 

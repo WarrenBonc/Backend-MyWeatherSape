@@ -1,5 +1,25 @@
 const mongoose = require("mongoose");
 
+// Sous-schema pour un vêtement
+const clothingItemSchema = new mongoose.Schema({
+  label: String, // ex: "T-shirt noir"
+  category: {
+    haut: String,
+    bas: String,
+    accessories: String,
+  },
+  forChild: { type: Boolean, default: false }
+});
+
+// Sous-schema pour un enfant
+const childSchema = new mongoose.Schema({
+  name: String,
+  gender: { type: String, enum: ['M', 'F'] },
+  ageGroup: { type: String, enum: ['bébé', 'enfant', 'ado'] },
+  dressing: [clothingItemSchema], // Sous-documents vêtements
+});
+
+
 const userSchema = new mongoose.Schema({
   firstName: String,
   email: { type: String, unique: true },
@@ -43,7 +63,7 @@ const userSchema = new mongoose.Schema({
   }, // Correction : fermeture correcte de l'objet
 
   preferencesCompleted: { type: Boolean, default: false },
-  children: [{ type: mongoose.Schema.Types.ObjectId, ref: "Child" }], // Référence aux enfants
+  children: [childSchema], // Référence aux enfants
 
   // Champs pour la réinitialisation du mot de passe
   resetToken: {
