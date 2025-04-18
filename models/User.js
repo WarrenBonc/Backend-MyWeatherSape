@@ -14,8 +14,8 @@ const clothingItemSchema = new mongoose.Schema({
 // Sous-schema pour un enfant
 const childSchema = new mongoose.Schema({
   name: String,
-  gender: { type: String, enum: ['M', 'F'] },
-  ageGroup: { type: String, enum: ['bébé', 'enfant', 'ado'] },
+  gender: String,
+  ageGroup: String,
   dressing: [clothingItemSchema], // Sous-documents vêtements
 });
 
