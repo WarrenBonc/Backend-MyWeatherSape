@@ -21,47 +21,15 @@ const childSchema = new mongoose.Schema({
 
 
 const userSchema = new mongoose.Schema({
+  //essentiels
+  lastName: String,
   firstName: String,
   email: { type: String, unique: true },
   password: String,
   birthdate: Date,
-
-  gender: { type: String, enum: ["M", "F"] }, // Seuls les valeurs "M" ou "F" sont valides
-  sensitivity: {
-    type: String,
-    enum: [
-      "frileux",
-      "sensible au froid",
-      "neutre",
-      "le froid ne me dérange pas",
-      "j'ai vite chaud",
-      "résistant au froid",
-    ],
-  },
-
-  accessories: [
-    {
-      type: String,
-      enum: [
-        "casquette",
-        "bonnet",
-        "écharpe",
-        "gants",
-        "sac à dos",
-        "lunettes de soleil",
-        "aucun",
-      ], // Accessoires favoris
-    },
-  ],
-  recommendationFrequency: {
-    type: String,
-    enum: [
-      "Une tenue par jour",
-      "Une tenue seulement si la météo change beaucoup",
-      "Plusieurs suggestions pour choisir",
-    ],
-  }, // Correction : fermeture correcte de l'objet
-
+  gender: String, // Suppression de l'enum pour le genre
+  sensitivity: String, // Suppression de l'enum pour la sensibilité
+  accessories: [String], // Suppression de l'enum pour les accessoires
   preferencesCompleted: { type: Boolean, default: false },
   children: [childSchema], // Référence aux enfants
 
@@ -89,9 +57,8 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   notificationPreferences: {
-    morning: { type: Boolean, default: false },
-    noon: { type: Boolean, default: false },
-    evening: { type: Boolean, default: false },
+    type: Boolean,
+    default: false,
   },
 });
 

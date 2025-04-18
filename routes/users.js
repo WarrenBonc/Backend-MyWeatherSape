@@ -49,7 +49,7 @@ router.post("/signup", (req, res) => {
 
       newUser.save().then((savedUser) => {
         const token = jwt.sign(
-          { id: savedUser._id, firstName: savedUser.firstName },
+          { id: savedUser._id, email: savedUser.email }, // Utiliser `savedUser` au lieu de `data`
           process.env.JWT_SECRET,
           { expiresIn: "7d" }
         );
@@ -409,4 +409,23 @@ router.post("/verify-code", (req, res) => {
   });
 });
 
+  // Route pour récupérer les préférences utilisateur
+  router.get("/preferences", authenticateToken, async (req, res) => {
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "Utilisateur non trouvé" });
+      }
+
+      res.json({
+        gender: user.gender || null,
+        sensitivity: user.sensitivity || null,
+        accessories: user.accessories || [],
+        recommendationFrequency: user.recommendationFrequency || null,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la récupération des préférences :", error);
+      res.status(500).json({ message: "Erreur interne du serveur" });
+    }
+  });
 module.exports = router;

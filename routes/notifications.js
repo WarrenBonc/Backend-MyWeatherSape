@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -8,14 +6,19 @@ const auth = require('../middlewares/auth');
 // Route pour sauvegarder les préférences de notifications
 router.post('/save-preferences', auth, async (req, res) => {
   const { preferences, notificationsEnabled } = req.body;
-  const userId = req.user._id;
+  console.log("🔐 Utilisateur authentifié :", req.user);
+  const userId = req.user.id;
+
+  if (typeof notificationsEnabled !== 'boolean') {
+    return res.status(400).json({ error: 'Statut notificationsEnabled manquant ou invalide' });
+  }
 
   try {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
         $set: {
-          notificationPreferences: preferences,
+          ...(preferences !== undefined && { notificationPreferences: preferences }),
           notificationsEnabled: notificationsEnabled,
         },
       },
@@ -35,7 +38,7 @@ router.post('/save-preferences', auth, async (req, res) => {
 
 // Route pour récupérer les préférences de notifications d'un utilisateur
 router.get('/preferences', auth, async (req, res) => {
-    const userId = req.user._id;
+    const userId = req.user.id;
   
     try {
       const user = await User.findById(userId);

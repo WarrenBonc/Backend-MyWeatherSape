@@ -37,6 +37,7 @@ app.use("/api/dressing", dressingRoutes);
 app.use("/api/ask-ai", iaRequestRoutes);
 app.use("/api/users", usersRoute);
 app.use('/api/weather', weatherRoutes);
+app.use("/api/notifications", notificationsRouter);
 // app.use("/api/auth", authRoutes);
 
 module.exports = app;
