@@ -9,8 +9,8 @@ router.post('/save-preferences', auth, async (req, res) => {
   console.log("🔐 Utilisateur authentifié :", req.user);
   const userId = req.user.id;
 
-  if (!preferences || typeof notificationsEnabled !== 'boolean') {
-    return res.status(400).json({ error: 'Préférences ou statut manquant/invalide' });
+  if (typeof notificationsEnabled !== 'boolean') {
+    return res.status(400).json({ error: 'Statut notificationsEnabled manquant ou invalide' });
   }
 
   try {
@@ -18,7 +18,7 @@ router.post('/save-preferences', auth, async (req, res) => {
       userId,
       {
         $set: {
-          notificationPreferences: preferences,
+          ...(preferences !== undefined && { notificationPreferences: preferences }),
           notificationsEnabled: notificationsEnabled,
         },
       },
