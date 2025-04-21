@@ -1,9 +1,12 @@
 var express = require("express");
 var router = express.Router();
-const axios = require("axios");
+const { InferenceClient } = require("@huggingface/inference");
 
 // Clé API Hugging Face (NE PAS partager publiquement)
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
+
+// Initialisation du client Hugging Face
+const client = new InferenceClient(HF_API_KEY);
 
 // Route POST pour interroger Hugging Face avec un prompt
 router.post("/request", async (req, res) => {
@@ -15,23 +18,32 @@ router.post("/request", async (req, res) => {
   }
 
   try {
-    // Requête vers l'API Hugging Face
-    const response = await axios.post(
-      "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
-      { inputs: prompt },
-      {
-        headers: { Authorization: `Bearer ${HF_API_KEY}` },
-        timeout: 30000,
-      }
-    );
+    // Requête vers l'API Hugging Face avec chatCompletion
+    const chatCompletion = await client.chatCompletion({
+      provider: "nebius",
+      model: "meta-llama/Llama-3.1-8B-Instruct",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      max_tokens: 512,
+    });
 
-    // Vérification si l'API a bien répondu
-    if (response.data.error) {
-      return res.status(500).json({ error: response.data.error });
+    // Vérification si une réponse a été générée
+    if (
+      !chatCompletion ||
+      !chatCompletion.choices ||
+      !chatCompletion.choices[0]
+    ) {
+      return res
+        .status(500)
+        .json({ error: "Aucune réponse générée par le modèle." });
     }
 
     // Envoi de la réponse au client
-    res.json({ response: response.data });
+    res.json({ response: chatCompletion.choices[0].message });
   } catch (error) {
     console.error(
       "Erreur Hugging Face:",

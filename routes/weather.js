@@ -2,10 +2,17 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const User = require("../models/User");
+const authenticateToken = require("../middlewares/auth");
 const {
   getWeatherByCity,
   getForecastByCity,
 } = require("../services/weatherAPI");
+const { InferenceClient } = require("@huggingface/inference");
+// Clé API Hugging Face (NE PAS partager publiquement)
+const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
+
+// Initialisation du client Hugging Face
+const client = new InferenceClient(HF_API_KEY);
 
 // Route 1 : GET /api/weather
 router.get("/", async (req, res) => {
@@ -108,60 +115,160 @@ function getWeatherCondition(code) {
 }
 
 // Route 3 : POST /api/weather/recommendation
-router.post("/recommendation", async (req, res) => {
-  const { userToken, city } = req.body;
+router.post("/recommendation", authenticateToken, async (req, res) => {
+  const { city, dayOffset } = req.body;
 
-  if (!userToken || !city) {
-    return res
-      .status(400)
-      .json({ message: "Champs manquants : userId et city requis." });
+  if (!city) {
+    return res.status(400).json({ message: "Ville manquante." });
   }
 
   try {
-    // 1. Récupération du profil utilisateur
-    const user = await User.findById(userToken);
-    if (!user)
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    // 1. Récupération du profil utilisateur depuis la base de données
+    const userId = req.user.id; // ID utilisateur ajouté par authenticateToken
+    const user = await User.findOne({ _id: userId });
 
-    // 2. Récupération de la météo
-    const weather = await getWeatherByCity(city);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
 
-    // 3. Construction du prompt pour Hugging Face
-    const prompt = `Tu es un expert en style vestimentaire. Voici le profil de la personne :
-- Prénom : ${user.name || "Utilisateur"}
-- Sensibilité au froid : ${user.sensitivity || "normale"}
-- Accessoires préférés : ${user.accessories?.join(", ") || "aucun"}
-
-La météo du jour à ${weather.city} est :
-- Température : ${weather.temperature}°C (ressenti ${weather.feels_like}°C)
-- Condition : ${weather.condition}
-- Vent : ${weather.wind} km/h
-- Humidité : ${weather.humidity}%
-
-Quels vêtements et accessoires devrais-tu lui recommander aujourd’hui ? Sois clair, personnalisé et donne un ton bienveillant.`;
-
-    // 4. Appel Hugging Face
-    const hfResponse = await axios.post(
-      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1",
-      { inputs: prompt },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-        },
-        timeout: 30000,
-      }
+    // 2. Récupération des données météo pour le jour spécifié
+    const geoRes = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        city
+      )}`
     );
+    const geoData = await geoRes.json();
+    if (!geoData[0]) {
+      return res.status(404).json({ message: "Ville introuvable." });
+    }
 
-    const aiText =
-      hfResponse.data[0]?.generated_text || "Pas de réponse générée.";
+    const lat = geoData[0].lat;
+    const lon = geoData[0].lon;
+
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,windspeed_10m_max&timezone=auto`;
+    const weatherRes = await fetch(weatherUrl);
+    const weatherData = await weatherRes.json();
+
+    const targetDay = parseInt(dayOffset) || 0;
+    const dailyWeather = weatherData.daily;
+
+    if (!dailyWeather || !dailyWeather.temperature_2m_max[targetDay]) {
+      return res
+        .status(404)
+        .json({ message: "Données météo introuvables pour ce jour." });
+    }
+
+    // 3. Extraire les données météo pour le jour spécifié
+    const maxTemp = dailyWeather.temperature_2m_max[targetDay];
+    const minTemp = dailyWeather.temperature_2m_min[targetDay];
+    const weatherCode = dailyWeather.weathercode[targetDay];
+    const windSpeed = dailyWeather.windspeed_10m_max[targetDay];
+    const precipitation = dailyWeather.precipitation_sum[targetDay];
+
+    const condition = getWeatherCondition(weatherCode);
+
+    // 4. Construction du prompt pour Hugging Face
+    const prompt = `
+    Tu es un expert en style vestimentaire. Tu peux utiliser maximum 160 caractères pour expliquer brièvement tes recommandations, ne saute pas de ligne et utilise des phrases courtes je veux une phrase complete pas plusieurs phrase separer.
+  
+    Voici le profil de la personne :
+    - Prénom : ${user.firstName || "Utilisateur"}
+    - Sensibilité au froid : ${user.sensitivity || "normale"}
+    - Accessoires préférés : ${user.accessories?.join(", ") || "aucun"}
+    - Fréquence des recommandations : ${
+      user.recommendationFrequency || "quotidienne"
+    }
+  
+    Voici le contenu de son dressing (avec des vêtements déjà disponibles) :
+    ${
+      user.closet?.map((item) => `• ${item.type} : ${item.name}`).join("\n") ||
+      "Aucun vêtement enregistré"
+    }
+  
+    La météo prévue à ${city} pour le jour ${
+      targetDay === 0
+        ? "aujourd'hui"
+        : targetDay === 1
+        ? "demain"
+        : `dans ${targetDay} jours`
+    } est :
+    - Température maximale : ${maxTemp}°C
+    - Température minimale : ${minTemp}°C
+    - Condition : ${condition}
+    - Vent : ${windSpeed} km/h
+    - Précipitations : ${precipitation} mm
+  
+    Quels vêtements et accessoires devrais-tu lui recommander pour ce jour ? 
+    Recommande uniquement ce qu'il possède déjà dans son dressing. Sois clair, bienveillant, direct, sans répétitions.
+  `;
+
+    // 5. Appel à l'API Hugging Face avec chatCompletion
+    const chatCompletion = await client.chatCompletion({
+      provider: "nebius",
+      model: "meta-llama/Llama-3.2-3B-Instruct",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      max_tokens: 512,
+    });
+
+    // Vérification si une réponse a été générée
+    if (
+      !chatCompletion ||
+      !chatCompletion.choices ||
+      !chatCompletion.choices[0]
+    ) {
+      return res
+        .status(500)
+        .json({ error: "Aucune réponse générée par le modèle." });
+    }
+
+    const aiText = chatCompletion.choices[0].message.content;
+
+    // 6. Retourner les recommandations au client
     res.json({ advice: aiText });
   } catch (error) {
-    console.error("Erreur dans /recommendation:", error);
-    res
-      .status(500)
-      .json({ message: "Erreur interne serveur", error: error.message });
+    console.error("Erreur dans /recommendation :", error);
+    res.status(500).json({
+      message: "Erreur interne du serveur.",
+      error: error.message,
+    });
   }
 });
+
+// Fonction pour convertir le code météo en texte
+function getWeatherCondition(code) {
+  switch (code) {
+    case 0:
+      return "Ensoleillé";
+    case 1:
+    case 2:
+    case 3:
+      return "Partiellement nuageux";
+    case 45:
+    case 48:
+      return "Brouillard";
+    case 51:
+    case 53:
+    case 55:
+      return "Bruine légère";
+    case 61:
+    case 63:
+    case 65:
+      return "Pluie";
+    case 71:
+    case 73:
+    case 75:
+      return "Neige";
+    case 95:
+      return "Orage";
+    default:
+      return "Inconnu";
+  }
+}
 
 // Route 4 : GET /api/weather/forecast
 router.get("/forecast", async (req, res) => {

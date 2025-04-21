@@ -8,7 +8,7 @@ const clothingItemSchema = new mongoose.Schema({
     bas: String,
     accessories: String,
   },
-  forChild: { type: Boolean, default: false }
+  forChild: { type: Boolean, default: false },
 });
 
 // Sous-schema pour un enfant
@@ -18,7 +18,6 @@ const childSchema = new mongoose.Schema({
   ageGroup: String,
   dressing: [clothingItemSchema], // Sous-documents vêtements
 });
-
 
 const userSchema = new mongoose.Schema({
   //essentiels
@@ -31,6 +30,7 @@ const userSchema = new mongoose.Schema({
   sensitivity: String, // Suppression de l'enum pour la sensibilité
   accessories: [String], // Suppression de l'enum pour les accessoires
   recommendationFrequency: String,
+  clothingItemSchema: [clothingItemSchema], // Référence aux vêtements
   preferencesCompleted: { type: Boolean, default: false },
   children: [childSchema], // Référence aux enfants
 
