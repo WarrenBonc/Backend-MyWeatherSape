@@ -3,11 +3,7 @@ const mongoose = require("mongoose");
 // Sous-schema pour un vêtement
 const clothingItemSchema = new mongoose.Schema({
   label: String, // ex: "T-shirt noir"
-  category: {
-    haut: String,
-    bas: String,
-    accessories: String,
-  },
+  category: String,
   forChild: { type: Boolean, default: false }
 });
 
@@ -30,6 +26,7 @@ const userSchema = new mongoose.Schema({
   gender: String, // Suppression de l'enum pour le genre
   sensitivity: String, // Suppression de l'enum pour la sensibilité
   accessories: [String], // Suppression de l'enum pour les accessoires
+  dressing: [clothingItemSchema],
   preferencesCompleted: { type: Boolean, default: false },
   children: [childSchema], // Référence aux enfants
 
