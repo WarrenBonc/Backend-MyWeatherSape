@@ -1,6 +1,7 @@
 const request = require("supertest");
 const app = require("./app");
 
+
 describe("GET /api/weather/7days-hourly/:city", () => {
   it("devrait retourner la prévision horaire sur 7 jours pour une ville valide", async () => {
     const res = await request(app).get("/api/weather/7days-hourly/Paris");
@@ -35,3 +36,6 @@ describe("GET /api/weather/7days-hourly/:city", () => {
     expect(res.body).toHaveProperty("message", "Ville introuvable");
   });
 });
+
+
+
