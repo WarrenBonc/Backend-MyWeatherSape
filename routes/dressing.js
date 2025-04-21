@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const ClothingItem = require("../models/ClothingItem");
 const authenticateToken = require("../middlewares/auth");
 const User = require("../models/User");
 
