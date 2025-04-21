@@ -11,7 +11,7 @@ describe('POST /api/users/signin', () => {
       .post('/api/users/signin')
       .send({
         email: 'pbuis69@gmail.com',
-        password: 'test1234', 
+        password: 'test12345', 
       });
 
     // Je m'attend à recevoir un code 200 et un objet contenant les infos de l'utilisateur
