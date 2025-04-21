@@ -15,7 +15,6 @@ const childSchema = new mongoose.Schema({
   dressing: [clothingItemSchema], // Sous-documents vêtements
 });
 
-
 const userSchema = new mongoose.Schema({
   //essentiels
   lastName: String,
@@ -53,10 +52,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  notificationPreferences: {
-    type: Boolean,
-    default: false,
-  },
+  notificationPreferences: [String],
 });
 
 module.exports = mongoose.model("User", userSchema);

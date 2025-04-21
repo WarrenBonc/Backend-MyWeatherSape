@@ -5,7 +5,8 @@ const auth = require('../middlewares/auth');
 
 // Route pour sauvegarder les préférences de notifications
 router.post('/save-preferences', auth, async (req, res) => {
-  const { preferences, notificationsEnabled } = req.body;
+  const { preferences } = req.body;
+  const { notificationsEnabled, notificationPreferences } = preferences || {};
   console.log("🔐 Utilisateur authentifié :", req.user);
   const userId = req.user.id;
 
@@ -18,8 +19,8 @@ router.post('/save-preferences', auth, async (req, res) => {
       userId,
       {
         $set: {
-          ...(preferences !== undefined && { notificationPreferences: preferences }),
-          notificationsEnabled: notificationsEnabled,
+          ...(notificationPreferences !== undefined && { notificationPreferences }),
+          ...(notificationsEnabled !== undefined && { notificationsEnabled }),
         },
       },
       { new: true }
@@ -49,7 +50,7 @@ router.get('/preferences', auth, async (req, res) => {
   
       res.json({
         notificationsEnabled: user.notificationsEnabled,
-        preferences: user.notificationPreferences || [],
+        notificationPreferences: user.notificationPreferences || [],
       });
     } catch (error) {
       console.error('Erreur lors de la récupération des préférences :', error);
