@@ -157,7 +157,7 @@ router.post("/forgot-password", async (req, res) => {
     },
   });
 
-  const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+  const resetLink = `http://192.168.1.23:3000/reset-password/${resetToken}`;
 
   const mailOptions = {
     from: process.env.MAIL_USER,
@@ -312,6 +312,10 @@ router.get("/verify-token", authenticateToken, (req, res) => {
 router.post("/send-email", async (req, res) => {
   try {
     const { email } = req.body;
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error("❌ Configuration d'email manquante (EMAIL_USER ou EMAIL_PASS)");
+      return res.status(500).json({ message: "Configuration email manquante" });
+    }
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
@@ -332,13 +336,19 @@ router.post("/send-email", async (req, res) => {
       expiresAt: Date.now() + 5 * 60 * 1000, // Expire dans 5 minutes
     });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    let transporter;
+    try {
+      transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+    } catch (error) {
+      console.error("Erreur de configuration du transporteur :", error);
+      return res.status(500).json({ message: "Erreur de configuration email" });
+    }
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -349,6 +359,7 @@ router.post("/send-email", async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
+    console.log(`✉️ Email de réinitialisation envoyé à ${email}`);
     res
       .status(200)
       .json({ message: "Verification code sent successfully", result: true });
