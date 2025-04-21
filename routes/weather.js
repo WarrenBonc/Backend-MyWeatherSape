@@ -91,29 +91,6 @@ router.get("/7days-hourly/:city", async (req, res) => {
   }
 });
 
-// Fonction pour convertir le code météo en texte
-function getWeatherCondition(code) {
-  switch (code) {
-    case 0:
-      return "Ensoleillé";
-    case 1:
-    case 2:
-    case 3:
-      return "Partiellement nuageux";
-    case 4:
-      return "Nuageux";
-    case 5:
-    case 6:
-    case 7:
-      return "Pluie légère";
-    case 8:
-    case 9:
-      return "Pluie forte";
-    default:
-      return "Inconnu";
-  }
-}
-
 // Route 3 : POST /api/weather/recommendation
 router.post("/recommendation", authenticateToken, async (req, res) => {
   const { city, dayOffset } = req.body;
@@ -239,37 +216,6 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
   }
 });
 
-// Fonction pour convertir le code météo en texte
-function getWeatherCondition(code) {
-  switch (code) {
-    case 0:
-      return "Ensoleillé";
-    case 1:
-    case 2:
-    case 3:
-      return "Partiellement nuageux";
-    case 45:
-    case 48:
-      return "Brouillard";
-    case 51:
-    case 53:
-    case 55:
-      return "Bruine légère";
-    case 61:
-    case 63:
-    case 65:
-      return "Pluie";
-    case 71:
-    case 73:
-    case 75:
-      return "Neige";
-    case 95:
-      return "Orage";
-    default:
-      return "Inconnu";
-  }
-}
-
 // Route 4 : GET /api/weather/forecast
 router.get("/forecast", async (req, res) => {
   const { city, days } = req.query;
@@ -361,5 +307,36 @@ router.get("/day", async (req, res) => {
     });
   }
 });
+
+// Fonction pour convertir le code météo en texte
+function getWeatherCondition(code) {
+  switch (code) {
+    case 0:
+      return "Ensoleillé";
+    case 1:
+    case 2:
+    case 3:
+      return "Partiellement nuageux";
+    case 45:
+    case 48:
+      return "Brouillard";
+    case 51:
+    case 53:
+    case 55:
+      return "Bruine légère";
+    case 61:
+    case 63:
+    case 65:
+      return "Pluie";
+    case 71:
+    case 73:
+    case 75:
+      return "Neige";
+    case 95:
+      return "Orage";
+    default:
+      return "Inconnu";
+  }
+}
 
 module.exports = router;

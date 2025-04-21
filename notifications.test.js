@@ -1,4 +1,3 @@
-// J'importe supertest pour simuler les requêtes HTTP vers notre backend
 const request = require('supertest');
 // J'importe l'application Express
 const app = require('./app');
@@ -46,11 +45,12 @@ beforeAll(async () => {
     .post('/api/users/signin')
     .send({
       email: 'pbuis69@gmail.com',
-      password: 'test1234',
+      password: 'test12345',
     });
 
   // Je récupère le cookie contenant le token
-  authCookie = res.headers['set-cookie'].find(cookie => cookie.startsWith('token='));
+  const cookies = res.headers['set-cookie'] || [];
+  authCookie = cookies.find(cookie => cookie.startsWith('token='));
 });
 
 // TEST DE LA SAUVEGARDE DES PRÉFÉRENCES NOTIFICATIONS
