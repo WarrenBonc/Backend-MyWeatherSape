@@ -253,8 +253,8 @@ router.get("/logout", (req, res) => {
 
 // route pour ajouter les preferences de l'utilisateur
 router.post("/update-preferences", authenticateToken, async (req, res) => {
-  const { gender, sensitivity, accessories, recommendationFrequency } =
-    req.body;
+  const { preferences } = req.body;
+  const { gender, sensitivity, accessories, recommendationFrequency } = preferences || {};
 
   try {
     const user = await User.findById(req.user.id); // Utiliser l'ID utilisateur depuis le token
