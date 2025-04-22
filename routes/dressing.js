@@ -59,12 +59,15 @@ router.post("/", authenticateToken, async (req, res) => {
       if (!child) return res.status(404).json({ message: "Enfant non trouvé" });
 
       child.dressing.push(clothingItem);
+      newItem = child.dressing[child.dressing.length - 1]; // récupère le dernier ajouté
     } else {
       // Ajout pour l'utilisateur principal
       user.dressing.push(clothingItem);
+      newItem = user.dressing[user.dressing.length - 1];
     }
     await user.save();
-    res.status(201).json({ message: "Vêtement ajouté avec succès" });
+    res.status(201).json({ message: "Vêtement ajouté avec succès", item: newItem, });
+     // renvoi de l'objet complet avec son _id
   } catch (error) {
     console.error("Erreur lors de l'ajout du vêtement :", error);
     res.status(500).json({ message: "Erreur lors de l'ajout du vêtement", error });
@@ -83,12 +86,14 @@ router.delete("/:clothingId", authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
 
+    console.log("Dressing principal :", user.dressing);
+
     if (childId) {
       // Suppression dans le dressing d'un enfant
       const child = user.children.id(childId);
       if (!child) return res.status(404).json({ message: "Enfant non trouvé" });
 
-      const clothingIndex = child.dressing.findIndex((item) => item._id.toString() === clothingId());
+      const clothingIndex = child.dressing.findIndex((item) => item._id.toString() === clothingId);
       if (clothingIndex === -1) {
         return res.status(404).json({ message: "Vêtement non trouvé dans le dressing de l'enfant" });
       }
@@ -96,7 +101,9 @@ router.delete("/:clothingId", authenticateToken, async (req, res) => {
       child.dressing.splice(clothingIndex, 1); // Supprime le vêtement
     } else {
       // Suppression dans le dressing principal
-      const clothingIndex = user.dressing.findIndex((item) => item._id.toString() === clothingId.toString());
+      const clothingIndex = user.dressing.findIndex((item) => item._id.toString() === clothingId);
+      console.log("Index trouvé :", clothingIndex);
+
       if (clothingIndex === -1) {
         return res.status(404).json({ message: "Vêtement non trouvé dans le dressing principal" });
       }
