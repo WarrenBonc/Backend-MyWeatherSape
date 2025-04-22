@@ -103,6 +103,8 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
     // 1. Récupération du profil utilisateur depuis la base de données
     const userId = req.user.id; // ID utilisateur ajouté par authenticateToken
     const user = await User.findOne({ _id: userId });
+    const array = req.user;
+    console.log("token bro", array);
 
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé." });
@@ -206,7 +208,7 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
     const aiText = chatCompletion.choices[0].message.content;
 
     // 6. Retourner les recommandations au client
-    res.json({ advice: aiText });
+    res.json({ advice: aiText, firstName: user.firstName });
   } catch (error) {
     console.error("Erreur dans /recommendation :", error);
     res.status(500).json({
