@@ -172,6 +172,9 @@ Météo prévue à ${city} ${
 Donne une **idée de tenue complète et adaptée** à la météo, incluant les couches de vêtements, les accessoires, et les chaussures. Tu peux t’inspirer de ce qu’il pourrait avoir dans son dressing, mais tu n’es pas obligé. Ne donne qu’un seul conseil vestimentaire, clair, utile et sans hésitation.
 `;
 
+    // Ajout du log du prompt avant l'appel à l'API Hugging Face
+    console.log("Prompt envoyé à Hugging Face :\n", prompt);
+
     // 5. Appel à l'API Hugging Face avec chatCompletion
     const chatCompletion = await client.chatCompletion({
       provider: "nebius",
@@ -184,6 +187,8 @@ Donne une **idée de tenue complète et adaptée** à la météo, incluant les c
       ],
       max_tokens: 512,
     });
+    // Ajout du log de la réponse brute Hugging Face
+    console.log("Réponse Hugging Face :", chatCompletion);
 
     // Vérification si une réponse a été générée
     if (
