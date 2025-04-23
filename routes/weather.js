@@ -148,38 +148,32 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
 
     // 4. Construction du prompt pour Hugging Face
     const prompt = `
-    Tu es un expert en style vestimentaire. Tu peux utiliser maximum 160 caractères pour expliquer brièvement tes recommandations, ne saute pas de ligne et utilise des phrases courtes je veux une phrase complete pas plusieurs phrase separer.
-  
-    Voici le profil de la personne :
-    - Prénom : ${user.firstName || "Utilisateur"}
-    - Sensibilité au froid : ${user.sensitivity || "normale"}
-    - Accessoires préférés : ${user.accessories?.join(", ") || "aucun"}
-    - Fréquence des recommandations : ${
-      user.recommendationFrequency || "quotidienne"
-    }
-  
-    Voici le contenu de son dressing (avec des vêtements déjà disponibles) :
-    ${
-      user.closet?.map((item) => `• ${item.type} : ${item.name}`).join("\n") ||
-      "Aucun vêtement enregistré"
-    }
-  
-    La météo prévue à ${city} pour le jour ${
+Tu es un expert en style vestimentaire. Donne une **recommandation claire, fluide et naturelle**, en **français**, avec un **ton bienveillant et utile**. Ne saute pas de ligne, ne parle pas d'intelligence artificielle, et ne parle pas à la 3e personne. Tu dois t’adresser directement à l’utilisateur**avec 160 caractères maximum**.
+
+Voici son profil :
+- Prénom : ${user.firstName || "Utilisateur"}
+- Sensibilité au froid : ${user.sensitivity || "normale"}
+- Accessoires préférés : ${user.accessories?.join(", ") || "aucun"}
+- Fréquence de recommandations : ${user.recommendationFrequency || "quotidienne"}
+
+Météo prévue à ${city} ${
       targetDay === 0
-        ? "aujourd'hui"
+        ? "aujourd’hui"
         : targetDay === 1
         ? "demain"
         : `dans ${targetDay} jours`
-    } est :
-    - Température maximale : ${maxTemp}°C
-    - Température minimale : ${minTemp}°C
-    - Condition : ${condition}
-    - Vent : ${windSpeed} km/h
-    - Précipitations : ${precipitation} mm
-  
-    Quels vêtements et accessoires devrais-tu lui recommander pour ce jour ? 
-    Recommande uniquement ce qu'il possède déjà dans son dressing. Sois clair, bienveillant, direct, sans répétitions.
-  `;
+    } :
+- Température maximale : ${maxTemp}°C
+- Température minimale : ${minTemp}°C
+- Condition : ${condition}
+- Vent : ${windSpeed} km/h
+- Précipitations : ${precipitation} mm
+
+Donne une **idée de tenue complète et adaptée** à la météo, incluant les couches de vêtements, les accessoires, et les chaussures. Tu peux t’inspirer de ce qu’il pourrait avoir dans son dressing, mais tu n’es pas obligé. Ne donne qu’un seul conseil vestimentaire, clair, utile et sans hésitation.
+`;
+
+    // Ajout du log du prompt avant l'appel à l'API Hugging Face
+    console.log("Prompt envoyé à Hugging Face :\n", prompt);
 
     // 5. Appel à l'API Hugging Face avec chatCompletion
     const chatCompletion = await client.chatCompletion({
@@ -193,6 +187,8 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
       ],
       max_tokens: 512,
     });
+    // Ajout du log de la réponse brute Hugging Face
+    console.log("Réponse Hugging Face :", chatCompletion);
 
     // Vérification si une réponse a été générée
     if (
