@@ -148,7 +148,7 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
 
     // 4. Construction du prompt pour Hugging Face
     const prompt = `
-Tu es un expert en style vestimentaire. Donne une **recommandation claire, fluide et naturelle**, en **français**, avec un **ton bienveillant et utile**. Ne saute pas de ligne, ne parle pas d'intelligence artificielle, et ne parle pas à la 3e personne. Tu dois t’adresser directement à l’utilisateur**avec 160 caractères maximum**.
+Tu es un expert en recommandations vestimentaire pour la météo. Donne une **recommandation claire, fluide et naturelle**, en **français**, avec un **ton bienveillant et utile**. Ne saute pas de ligne, ne parle pas d'intelligence artificielle, et ne parle pas à la 3e personne. Tu dois t’adresser directement à l’utilisateur. **La recommandation finale ne doit pas dépasser 160 caractères.**
 
 Voici son profil :
 - Prénom : ${user.firstName || "Utilisateur"}
