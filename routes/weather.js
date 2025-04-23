@@ -154,7 +154,9 @@ Voici son profil :
 - Prénom : ${user.firstName || "Utilisateur"}
 - Sensibilité au froid : ${user.sensitivity || "normale"}
 - Accessoires préférés : ${user.accessories?.join(", ") || "aucun"}
-- Fréquence de recommandations : ${user.recommendationFrequency || "quotidienne"}
+- Fréquence de recommandations : ${
+      user.recommendationFrequency || "quotidienne"
+    }
 
 Météo prévue à ${city} ${
       targetDay === 0
@@ -207,6 +209,130 @@ Donne une **idée de tenue complète et adaptée** à la météo, incluant les c
     res.json({ advice: aiText, firstName: user.firstName });
   } catch (error) {
     console.error("Erreur dans /recommendation :", error);
+    res.status(500).json({
+      message: "Erreur interne du serveur.",
+      error: error.message,
+    });
+  }
+});
+
+router.post("/recommendation/child", authenticateToken, async (req, res) => {
+  const { city, dayOffset, childId } = req.body;
+
+  if (!city) {
+    return res.status(400).json({ message: "Ville manquante." });
+  }
+
+  try {
+    // 1. Récupération du profil utilisateur et de l'enfant
+    const userId = req.user.id; // ID utilisateur ajouté par authenticateToken
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    const child = user.children.id(childId); // Récupérer l'enfant par son ID
+    if (!child) {
+      return res.status(404).json({ message: "Enfant non trouvé." });
+    }
+
+    // 2. Récupération des données météo pour le jour spécifié
+    const geoRes = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        city
+      )}`
+    );
+    const geoData = await geoRes.json();
+    if (!geoData[0]) {
+      return res.status(404).json({ message: "Ville introuvable." });
+    }
+
+    const lat = geoData[0].lat;
+    const lon = geoData[0].lon;
+
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,windspeed_10m_max&timezone=auto`;
+    const weatherRes = await fetch(weatherUrl);
+    const weatherData = await weatherRes.json();
+
+    const targetDay = parseInt(dayOffset) || 0;
+    const dailyWeather = weatherData.daily;
+
+    if (!dailyWeather || !dailyWeather.temperature_2m_max[targetDay]) {
+      return res
+        .status(404)
+        .json({ message: "Données météo introuvables pour ce jour." });
+    }
+
+    // 3. Extraire les données météo pour le jour spécifié
+    const maxTemp = dailyWeather.temperature_2m_max[targetDay];
+    const minTemp = dailyWeather.temperature_2m_min[targetDay];
+    const weatherCode = dailyWeather.weathercode[targetDay];
+    const windSpeed = dailyWeather.windspeed_10m_max[targetDay];
+    const precipitation = dailyWeather.precipitation_sum[targetDay];
+
+    const condition = getWeatherCondition(weatherCode);
+
+    // 4. Construction du prompt pour Hugging Face
+    const prompt = `
+Tu es un expert en style vestimentaire pour enfants. Donne une **recommandation claire, fluide et naturelle**, en **français**, avec un **ton bienveillant et utile**. Ne saute pas de ligne, ne parle pas d'intelligence artificielle, et ne parle pas à la 3e personne. Tu dois t’adresser directement à l’utilisateur **avec 160 caractères maximum**.
+
+Voici le profil de l'enfant :
+- Prénom : ${child.name}
+- Genre : ${child.gender}
+- Vêtements disponibles : ${
+      child.dressing.map((item) => item.label).join(", ") || "aucun"
+    }
+
+Météo prévue à ${city} ${
+      targetDay === 0
+        ? "aujourd’hui"
+        : targetDay === 1
+        ? "demain"
+        : `dans ${targetDay} jours`
+    } :
+- Température maximale : ${maxTemp}°C
+- Température minimale : ${minTemp}°C
+- Condition : ${condition}
+- Vent : ${windSpeed} km/h
+- Précipitations : ${precipitation} mm
+
+Donne une **idée de tenue complète et adaptée** à la météo pour cet enfant, incluant les couches de vêtements, les accessoires, et les chaussures. Ne donne qu’un seul conseil vestimentaire, clair, utile et sans hésitation.
+`;
+
+    // Ajout du log du prompt avant l'appel à l'API Hugging Face
+    console.log("Prompt envoyé à Hugging Face :\n", prompt);
+
+    // 5. Appel à l'API Hugging Face avec chatCompletion
+    const chatCompletion = await client.chatCompletion({
+      provider: "nebius",
+      model: "meta-llama/Llama-3.2-3B-Instruct",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      max_tokens: 512,
+    });
+
+    // Vérification si une réponse a été générée
+    if (
+      !chatCompletion ||
+      !chatCompletion.choices ||
+      !chatCompletion.choices[0]
+    ) {
+      return res
+        .status(500)
+        .json({ error: "Aucune réponse générée par le modèle." });
+    }
+
+    const aiText = chatCompletion.choices[0].message.content;
+
+    // 6. Retourner les recommandations au client
+    res.json({ advice: aiText, childName: child.name });
+  } catch (error) {
+    console.error("Erreur dans /recommendation/child :", error);
     res.status(500).json({
       message: "Erreur interne du serveur.",
       error: error.message,
