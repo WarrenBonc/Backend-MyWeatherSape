@@ -64,9 +64,12 @@ router.post("/", authenticateToken, async (req, res) => {
       // Ajout pour l'utilisateur principal
       user.dressing.push(clothingItem);
       newItem = user.dressing[user.dressing.length - 1];
+      
+       // récupère le dernier ajouté
     }
     await user.save();
-    res.status(201).json({ message: "Vêtement ajouté avec succès", item: newItem, });
+    const userDressing = user.dressing 
+    res.status(201).json({ message: "Vêtement ajouté avec succès", item: newItem, userDressing }); // renvoi de l'objet complet avec son _id
      // renvoi de l'objet complet avec son _id
   } catch (error) {
     console.error("Erreur lors de l'ajout du vêtement :", error);
