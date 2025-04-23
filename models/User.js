@@ -4,14 +4,13 @@ const mongoose = require("mongoose");
 const clothingItemSchema = new mongoose.Schema({
   label: String, // ex: "T-shirt noir"
   category: String,
-  forChild: { type: Boolean, default: false }
+  forChild: { type: Boolean, default: false },
 });
 
 // Sous-schema pour un enfant
 const childSchema = new mongoose.Schema({
   name: String,
   gender: String,
-  ageGroup: String,
   dressing: [clothingItemSchema], // Sous-documents vêtements
 });
 
