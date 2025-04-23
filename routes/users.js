@@ -421,4 +421,42 @@ router.get("/children", authenticateToken, async (req, res) => {
   }
 });
 
+// Route pour supprimer un enfant
+router.delete("/remove-child", authenticateToken, async (req, res) => {
+  try {
+    const { childId } = req.body;
+
+    // Vérifier si l'ID de l'enfant est fourni
+    if (!childId) {
+      return res.status(400).json({ message: "ID de l'enfant manquant." });
+    }
+
+    // Récupérer l'utilisateur connecté
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    // Trouver et supprimer l'enfant du tableau `children`
+    const childIndex = user.children.findIndex(
+      (child) => child._id.toString() === childId
+    );
+
+    if (childIndex === -1) {
+      return res.status(404).json({ message: "Enfant non trouvé." });
+    }
+
+    user.children.splice(childIndex, 1); // Supprimer l'enfant du tableau
+
+    // Sauvegarder les modifications
+    await user.save();
+
+    res.json({ message: "Enfant supprimé avec succès." });
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'enfant :", error);
+    res.status(500).json({ message: "Erreur interne du serveur." });
+  }
+});
+
 module.exports = router;
