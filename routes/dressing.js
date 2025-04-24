@@ -48,6 +48,8 @@ router.post("/", authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
 
+    let newItem;
+
     if (isForChild) {
       // Vérification de childId
       if (!childId) {
@@ -68,8 +70,8 @@ router.post("/", authenticateToken, async (req, res) => {
        // récupère le dernier ajouté
     }
     await user.save();
-    const userDressing = user.dressing 
-    res.status(201).json({ message: "Vêtement ajouté avec succès", item: newItem, userDressing }); // renvoi de l'objet complet avec son _id
+    
+    res.status(201).json({ message: "Vêtement ajouté avec succès", item: newItem}); // renvoi de l'objet complet avec son _id
      // renvoi de l'objet complet avec son _id
   } catch (error) {
     console.error("Erreur lors de l'ajout du vêtement :", error);
