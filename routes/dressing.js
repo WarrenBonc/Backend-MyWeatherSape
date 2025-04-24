@@ -4,168 +4,141 @@ const router = express.Router();
 const authenticateToken = require("../middlewares/auth");
 const User = require("../models/User");
 
-
 // GET /api/dressing?forChild=false
 // GET /api/dressing?forChild=true&category=haut
 
 router.get("/", authenticateToken, async (req, res) => {
-  const { forChild } = req.query; // Récupère le paramètre forChild
+  const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
 
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    const user = await User.findById(userId).select("dressing children");
 
-    if (forChild === "true") {
-      // Récupérer le dressing des enfants
-      const childrenDressing = user.children.map((child) => child.dressing).flat();
-      return res.json({ data: childrenDressing });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // Récupérer le dressing principal
-    res.json({ data: user.dressing });
+    let dressingItems = user.dressing;
+    console.log("Dressing items:", dressingItems);
+
+    //user > children > [dressing]
+    const children = user.children;
+    const childrenDressing = children.map((child) =>
+      child.dressing
+        .map((item) => ({
+          _id: item._id.toString(), // Convertir en chaîne pour éviter les références circulaires
+          label: item.label,
+          category: item.category,
+          forChild: item.forChild,
+          childId: child._id.toString(), // Ajouter l'ID de l'enfant
+          childName: child.name, // Ajouter le nom de l'enfant
+        }))
+        .flat()
+    );
+    console.log("Children dressing:", childrenDressing);
+
+    res.json({
+      data: dressingItems,
+      childrenDressing: childrenDressing,
+      children: children,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Erreur lors de la récupération du dressing", error });
+    console.error("Error fetching dressing items:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
-// POST /api/dressing
 router.post("/", authenticateToken, async (req, res) => {
-  console.log("Requête reçue :", req.body);
-
-  const { label, category, forChild, childId } = req.body;
-
-  if (!label || !category) {
-    return res.status(400).json({ message: "Label et catégorie sont requis" });
-  }
-
-  // Conversion de forChild en booléen
-  const isForChild = forChild === true || forChild === "true";
-
-  // Création de l'objet vêtement
-  const clothingItem = { label, category };
-
+  const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
+  const { label, category, childId, forChild } = req.body;
+  console.log(
+    "forChild:",
+    forChild,
+    "childId:",
+    childId,
+    "label:",
+    label,
+    "category:",
+    category
+  );
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    const user = await User.findById(userId);
 
-    if (isForChild) {
-      // Vérification de childId
-      if (!childId) {
-        return res.status(400).json({ message: "childId est requis pour ajouter un vêtement à un enfant" });
-      }
-
-      // Ajout pour un enfant
-      const child = user.children.id(childId);
-      if (!child) return res.status(404).json({ message: "Enfant non trouvé" });
-
-      child.dressing.push(clothingItem);
-      newItem = child.dressing[child.dressing.length - 1]; // récupère le dernier ajouté
-    } else {
-      // Ajout pour l'utilisateur principal
-      user.dressing.push(clothingItem);
-      newItem = user.dressing[user.dressing.length - 1];
-      
-       // récupère le dernier ajouté
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
+    if (forChild === "true" || forChild === true) {
+      // ajouter un vêtement pour un enfant
+      const child = user.children.id(childId); // Récupérer l'enfant par son ID
+      if (!child) {
+        return res.status(404).json({ message: "Child not found" });
+      }
+      const newClothingItem = {
+        label,
+        category,
+        forChild,
+      };
+      child.dressing.push(newClothingItem); // Ajouter le vêtement à la liste des vêtements de l'enfant
+      await user.save();
+      return res.status(201).json({
+        message: "Clothing item added successfully",
+        data: newClothingItem,
+      });
+    }
+    // ajouter un vêtement pour l'utilisateur
+    const newClothingItem = {
+      label,
+      category,
+      forChild,
+    };
+
+    // Ajouter le vêtement à la collection de vêtements de l'utilisateur
+    user.dressing.push(newClothingItem);
     await user.save();
-    const userDressing = user.dressing 
-    res.status(201).json({ message: "Vêtement ajouté avec succès", item: newItem, userDressing }); // renvoi de l'objet complet avec son _id
-     // renvoi de l'objet complet avec son _id
+
+    res.status(201).json({
+      message: "Clothing item added successfully",
+      data: newClothingItem,
+    });
   } catch (error) {
-    console.error("Erreur lors de l'ajout du vêtement :", error);
-    res.status(500).json({ message: "Erreur lors de l'ajout du vêtement", error });
+    console.error("Error adding clothing item:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
-  // DELETE /api/dressing/:clothingId
-router.delete("/:clothingId", authenticateToken, async (req, res) => {
-  const { clothingId } = req.params; // Récupère l'ID du vêtement à supprimer
-  const { childId } = req.query; // Optionnel : ID de l'enfant
-
-  console.log("Clothing ID :", clothingId);
-  console.log("Child ID :", childId);
-
+router.delete("/", authenticateToken, async (req, res) => {
+  const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
+  const { clothingId, childId, forChild } = req.body;
+  console.log("clothingId:", clothingId);
+  console.log("childId:", childId);
+  console.log("forChild:", forChild);
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    const user = await User.findById(userId);
 
-    console.log("Dressing principal :", user.dressing);
-
-    if (childId) {
-      // Suppression dans le dressing d'un enfant
-      const child = user.children.id(childId);
-      if (!child) return res.status(404).json({ message: "Enfant non trouvé" });
-
-      const clothingIndex = child.dressing.findIndex((item) => item._id.toString() === clothingId);
-      if (clothingIndex === -1) {
-        return res.status(404).json({ message: "Vêtement non trouvé dans le dressing de l'enfant" });
-      }
-
-      child.dressing.splice(clothingIndex, 1); // Supprime le vêtement
-    } else {
-      // Suppression dans le dressing principal
-      const clothingIndex = user.dressing.findIndex((item) => item._id.toString() === clothingId);
-      console.log("Index trouvé :", clothingIndex);
-
-      if (clothingIndex === -1) {
-        return res.status(404).json({ message: "Vêtement non trouvé dans le dressing principal" });
-      }
-
-      user.dressing.splice(clothingIndex, 1); // Supprime le vêtement
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-
+    if (forChild === true || forChild === "true") {
+      // supprimer un vêtement pour un enfant
+      const child = user.children.id(childId);
+      if (!child) {
+        return res.status(404).json({ message: "Child not found" });
+      }
+      const initialLength = child.dressing.length;
+      child.dressing = child.dressing.filter(
+        (item) => item._id.toString() !== clothingId
+      );
+    }
+    // Supprimer le vêtement de la collection de vêtements de l'utilisateur
+    user.dressing = user.dressing.filter(
+      (item) => item._id.toString() !== clothingId
+    );
     await user.save();
-    res.status(200).json({ message: "Vêtement supprimé avec succès" });
+
+    res.status(200).json({ message: "Clothing item deleted successfully" });
   } catch (error) {
-    console.error("Erreur lors de la suppression du vêtement :", error);
-    res.status(500).json({ message: "Erreur lors de la suppression du vêtement", error });
+    console.error("Error deleting clothing item:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
-
-// PUT /api/dressing/:clothingId
-router.put("/:clothingId", authenticateToken, async (req, res) => {
-  const { clothingId } = req.params; // Récupère l'ID du vêtement à mettre à jour
-  const { childId } = req.query; // Optionnel : ID de l'enfant
-  const { label, category } = req.body; // Champs à mettre à jour
-
-  if (!label && !category) {
-    return res.status(400).json({ message: "Au moins un champ (label ou catégorie) doit être fourni pour la mise à jour" });
-  }
-
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-
-    let clothingItem;
-
-    if (childId) {
-      // Mise à jour dans le dressing d'un enfant
-      const child = user.children.id(childId);
-      if (!child) return res.status(404).json({ message: "Enfant non trouvé" });
-
-      clothingItem = child.dressing.id(clothingId);
-      if (!clothingItem) {
-        return res.status(404).json({ message: "Vêtement non trouvé dans le dressing de l'enfant" });
-      }
-    } else {
-      // Mise à jour dans le dressing principal
-      clothingItem = user.dressing.id(clothingId);
-      if (!clothingItem) {
-        return res.status(404).json({ message: "Vêtement non trouvé dans le dressing principal" });
-      }
-    }
-
-    // Mise à jour des champs
-    if (label) clothingItem.label = label;
-    if (category) clothingItem.category = category;
-
-    await user.save();
-    res.status(200).json({ message: "Vêtement mis à jour avec succès", data: clothingItem });
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour du vêtement :", error);
-    res.status(500).json({ message: "Erreur lors de la mise à jour du vêtement", error });
-  }
-});
-
 
 module.exports = router;
