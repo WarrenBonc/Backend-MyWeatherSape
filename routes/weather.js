@@ -103,8 +103,6 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
     // 1. Récupération du profil utilisateur depuis la base de données
     const userId = req.user.id; // ID utilisateur ajouté par authenticateToken
     const user = await User.findOne({ _id: userId });
-    const array = req.user;
-    console.log("token bro", array);
 
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé." });
@@ -146,9 +144,9 @@ router.post("/recommendation", authenticateToken, async (req, res) => {
 
     const condition = getWeatherCondition(weatherCode);
 
-    // 4. Construction du prompt pour Hugging Face
-    const prompt = `
-Tu es un expert en recommandations vestimentaire pour la météo. Donne une **recommandation claire, fluide et naturelle**, en **français**, avec un **ton bienveillant et utile**. Ne saute pas de ligne, ne parle pas d'intelligence artificielle, et ne parle pas à la 3e personne. Tu dois t’adresser directement à l’utilisateur. **La recommandation finale ne doit pas dépasser 160 caractères.**
+    // 4. Construction du message pour Hugging Face
+    const message = `
+Tu es un expert en recommandations vestimentaires pour la météo. Donne une **recommandation claire, fluide et naturelle**, en **français**, avec un **ton bienveillant et utile**. Ne saute pas de ligne, ne parle pas d'intelligence artificielle, et ne parle pas à la 3e personne. Tu dois t’adresser directement à l’utilisateur. **La recommandation finale ne doit pas dépasser 160 caractères.**
 
 Voici son profil :
 - Prénom : ${user.firstName || "Utilisateur"}
@@ -171,24 +169,22 @@ Météo prévue à ${city} ${
 - Vent : ${windSpeed} km/h
 - Précipitations : ${precipitation} mm
 
-Donne une **idée de tenue complète et adaptée** à la météo, incluant les couches de vêtements, les accessoires, et les chaussures. Tu peux t’inspirer de ce qu’il pourrait avoir dans son dressing, mais tu n’es pas obligé. Ne donne qu’un seul conseil vestimentaire, clair, utile et sans hésitation.
+Donne une **idée de tenue complète et adaptée** à la météo, incluant les couches de vêtements, les accessoires, et les chaussures. Ne donne qu’un seul conseil vestimentaire, clair, utile et sans hésitation.
 `;
-
-    // Ajout du log du prompt avant l'appel à l'API Hugging Face
-    console.log("Prompt envoyé à Hugging Face :\n", prompt);
 
     // 5. Appel à l'API Hugging Face avec chatCompletion
     const chatCompletion = await client.chatCompletion({
       provider: "nebius",
-      model: "meta-llama/Llama-3.2-3B-Instruct",
+      model: "deepseek-ai/DeepSeek-V3-0324",
       messages: [
         {
           role: "user",
-          content: prompt,
+          content: message,
         },
       ],
       max_tokens: 512,
     });
+
     // Ajout du log de la réponse brute Hugging Face
     console.log("Réponse Hugging Face :", chatCompletion);
 
@@ -224,20 +220,20 @@ router.post("/recommendation/child", authenticateToken, async (req, res) => {
   }
 
   try {
-    // 1. Récupération du profil utilisateur et de l'enfant
-    const userId = req.user.id; // ID utilisateur ajouté par authenticateToken
+    // Récupération du profil utilisateur et de l'enfant
+    const userId = req.user.id;
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé." });
     }
 
-    const child = user.children.id(childId); // Récupérer l'enfant par son ID
+    const child = user.children.id(childId);
     if (!child) {
       return res.status(404).json({ message: "Enfant non trouvé." });
     }
 
-    // 2. Récupération des données météo pour le jour spécifié
+    // Récupération des données météo
     const geoRes = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
         city
@@ -264,7 +260,6 @@ router.post("/recommendation/child", authenticateToken, async (req, res) => {
         .json({ message: "Données météo introuvables pour ce jour." });
     }
 
-    // 3. Extraire les données météo pour le jour spécifié
     const maxTemp = dailyWeather.temperature_2m_max[targetDay];
     const minTemp = dailyWeather.temperature_2m_min[targetDay];
     const weatherCode = dailyWeather.weathercode[targetDay];
@@ -273,7 +268,7 @@ router.post("/recommendation/child", authenticateToken, async (req, res) => {
 
     const condition = getWeatherCondition(weatherCode);
 
-    // 4. Construction du prompt pour Hugging Face
+    // Construction du prompt
     const prompt = `
 Tu es un expert en style vestimentaire pour enfants. Donne une **recommandation claire, fluide et naturelle**, en **français**, avec un **ton bienveillant et utile**. Ne saute pas de ligne, ne parle pas d'intelligence artificielle, et ne parle pas à la 3e personne. Tu dois t’adresser directement à l’utilisateur **avec 160 caractères maximum**.
 
@@ -300,13 +295,10 @@ Météo prévue à ${city} ${
 Donne une **idée de tenue complète et adaptée** à la météo pour cet enfant, incluant les couches de vêtements, les accessoires, et les chaussures. Ne donne qu’un seul conseil vestimentaire, clair, utile et sans hésitation.
 `;
 
-    // Ajout du log du prompt avant l'appel à l'API Hugging Face
-    console.log("Prompt envoyé à Hugging Face :\n", prompt);
-
-    // 5. Appel à l'API Hugging Face avec chatCompletion
+    // Appel à l'API Hugging Face avec chatCompletion
     const chatCompletion = await client.chatCompletion({
       provider: "nebius",
-      model: "meta-llama/Llama-3.2-3B-Instruct",
+      model: "deepseek-ai/DeepSeek-V3-0324",
       messages: [
         {
           role: "user",
@@ -329,7 +321,7 @@ Donne une **idée de tenue complète et adaptée** à la météo pour cet enfant
 
     const aiText = chatCompletion.choices[0].message.content;
 
-    // 6. Retourner les recommandations au client
+    // Retourner les recommandations au client
     res.json({ advice: aiText, childName: child.name });
   } catch (error) {
     console.error("Erreur dans /recommendation/child :", error);
