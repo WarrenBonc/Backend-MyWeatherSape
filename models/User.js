@@ -27,26 +27,8 @@ const userSchema = new mongoose.Schema({
   dressing: [clothingItemSchema],
   preferencesCompleted: { type: Boolean, default: false },
   children: [childSchema], // Référence aux enfants
+  expoPushToken: String,
 
-  // Champs pour la réinitialisation du mot de passe
-  resetToken: {
-    type: String,
-    default: null,
-  },
-  resetTokenExpiry: {
-    type: Date,
-    default: null,
-  },
-  expoPushToken: {
-    type: String,
-    default: null,
-  },
-  notificationTimes: [
-    {
-      type: String,
-      enum: ["morning", "noon", "evening"],
-    },
-  ],
   notificationsEnabled: {
     type: Boolean,
     default: false,
