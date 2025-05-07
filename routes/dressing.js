@@ -1,12 +1,9 @@
 const express = require("express");
 const router = express.Router();
-
 const authenticateToken = require("../middlewares/auth");
 const User = require("../models/User");
 
-// GET /api/dressing?forChild=false
-// GET /api/dressing?forChild=true&category=haut
-
+//route pour récupérer les vêtements
 router.get("/", authenticateToken, async (req, res) => {
   const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
 
@@ -47,6 +44,7 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
+//route pour ajouter un vêtement
 router.post("/", authenticateToken, async (req, res) => {
   const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
   const { label, category, childId, forChild } = req.body;
@@ -105,6 +103,7 @@ router.post("/", authenticateToken, async (req, res) => {
   }
 });
 
+//route pour supprimer un vêtement
 router.delete("/", authenticateToken, async (req, res) => {
   const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
   const { clothingId, childId, forChild } = req.body;

@@ -21,7 +21,10 @@
     "morgan": "~1.9.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.1",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "openai": "^4.96.0",
+    "torch": "^0.2.7",
+    "transformers": "^3.1.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",

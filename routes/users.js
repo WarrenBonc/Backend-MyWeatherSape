@@ -1,15 +1,12 @@
 var express = require("express");
 var router = express.Router(); // Création d’un routeur Express
-
 const verificationCodes = new Map();
-
 const crypto = require("crypto"); //pour générer un token sécurisé lors de la reinitialisation du mdp
 const nodemailer = require("nodemailer"); //Import de la bibliotheque nodemailer pour l envoie des mails
 const User = require("../models/User"); // Import du modèle User
 const bcrypt = require("bcrypt"); // Pour hasher les mots de passe
 const jwt = require("jsonwebtoken"); // Pour créer les tokens JWT
 const authenticateToken = require("../middlewares/auth");
-const JWT_SECRET = process.env.JWT_SECRET; // Clé secrète pour signer les tokens (à stocker dans .env en prod)
 
 // Signup route
 router.post("/signup", (req, res) => {
@@ -76,7 +73,6 @@ router.post("/signup", (req, res) => {
 });
 
 // Signin route (connexion)
-
 router.post("/signin", (req, res) => {
   const { email, password } = req.body;
 
@@ -155,8 +151,6 @@ router.post("/reset-password", authenticateToken, async (req, res) => {
       .json({ success: false, message: "Erreur interne du serveur" });
   }
 });
-
-//Route POST pour finaliser la réinitialisation du mot de passe avec un token
 
 // Logout route
 router.get("/logout", (req, res) => {
@@ -366,7 +360,6 @@ router.get("/preferences", authenticateToken, async (req, res) => {
 });
 
 // route pour ajouter un enfant
-
 router.post("/add-child", authenticateToken, async (req, res) => {
   try {
     const { firstName, gender, dressing } = req.body;
@@ -403,7 +396,6 @@ router.post("/add-child", authenticateToken, async (req, res) => {
 });
 
 //route pour recuperer les enfants de l'utilisateur, les enfants sont stockés dans le tableau children de l'utilisateur
-
 router.get("/children", authenticateToken, async (req, res) => {
   try {
     // Récupérer l'utilisateur connecté
