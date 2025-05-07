@@ -156,7 +156,7 @@ Donne une **idée de tenue complète et adaptée** à la météo, incluant les c
           content: message,
         },
       ],
-      max_tokens: 512,
+      max_tokens: 160,
     });
 
     // Ajout du log de la réponse brute Hugging Face
