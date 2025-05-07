@@ -187,7 +187,7 @@ Donne une **idée de tenue complète et adaptée** à la météo, incluant les c
           content: prompt,
         },
       ],
-      max_tokens: 512,
+      max_tokens: 160,
     });
     // Ajout du log de la réponse brute Hugging Face
     console.log("Réponse Hugging Face :", chatCompletion);
