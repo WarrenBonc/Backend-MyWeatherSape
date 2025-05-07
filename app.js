@@ -25,6 +25,10 @@ app.use(express.json());
 
 // Pour analyser le corps des requêtes JSON
 
+app.get("/", (req, res) => {
+  res.send("Serveur de l'API de MyWeatherSape opérationnel");
+});
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connecté"))
