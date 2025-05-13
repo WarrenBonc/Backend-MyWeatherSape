@@ -213,7 +213,7 @@ router.post("/complete-preferences", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur" });
   }
 });
-
+// router pour vérifier si le token est valide
 router.get("/verify-token", authenticateToken, (req, res) => {
   try {
     // Si le middleware `authenticateToken` passe, le token est valide
@@ -225,7 +225,7 @@ router.get("/verify-token", authenticateToken, (req, res) => {
       .json({ valid: false, message: "Token invalide ou expiré." });
   }
 });
-
+// route pour envoyer un email de réinitialisation de mot de passe
 router.post("/send-email", async (req, res) => {
   try {
     const { email } = req.body;
@@ -287,7 +287,7 @@ router.post("/send-email", async (req, res) => {
     res.status(500).json({ message: "Failed to send email", error });
   }
 });
-
+// route pour vérifier le code de vérification
 router.post("/verify-code", (req, res) => {
   const { code } = req.body;
 
